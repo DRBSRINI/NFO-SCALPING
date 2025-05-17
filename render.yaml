@@ -6,8 +6,8 @@ services:
     startCommand: python main.py
     envVars:
       - key: CLIENT_ID
-        fromEnv: CLIENT_ID
+        sync: true
       - key: ACCESS_TOKEN
-        fromEnv: ACCESS_TOKEN
+        sync: true
       - key: APP_NAME
-        fromEnv: APP_NAME
+        sync: true
