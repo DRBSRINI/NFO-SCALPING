@@ -2,6 +2,7 @@ import os
 import time
 import requests
 from datetime import datetime, timedelta
+print("🚀 Bot Started Successfully!")
 
 # === ENVIRONMENT VARIABLES ===
 CLIENT_ID = os.getenv("CLIENT_ID")
