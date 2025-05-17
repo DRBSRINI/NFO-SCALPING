@@ -1,7 +1,36 @@
 import os
 import requests
 
-print("\U0001F680 Bot Started Successfully!")
+import os
+import requests
+
+print("🚀 Bot Started Successfully!")
+
+# Read credentials from Render environment variables
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
+APP_NAME = os.environ.get("APP_NAME")
+
+# Print for debug
+print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
+print("📦 App Name:", APP_NAME)
+
+# Correct API URL
+url = "https://api.dhan.co/user-details"
+
+try:
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    print("📡 Status Code:", response.status_code)
+    print("🧾 Response:", response.json())
+
+except Exception as e:
+    print("❌ API call failed:", e)
+
 
 # Read credentials from Render environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID")
