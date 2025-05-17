@@ -1,17 +1,9 @@
 import os
 import requests
 
-import os
-import requests
-
-import os
-import requests
-import os
-import requests
-
 print("🚀 Bot Started Successfully!")
 
-# Environment variables from Render
+# Load credentials
 CLIENT_ID = os.environ.get("CLIENT_ID")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 APP_NAME = os.environ.get("APP_NAME")
@@ -20,14 +12,15 @@ print("🆔 Client ID:", CLIENT_ID)
 print("🔐 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
 print("📦 App Name:", APP_NAME)
 
-# Make actual request to Dhan's user profile endpoint
 try:
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "client_id": CLIENT_ID,
     }
 
-    url = "https://api.dhan.co/users/details"  # ✅ CORRECT endpoint
+    url = "https://api.dhan.co/users/me"  # ✅ CORRECT endpoint
+
     response = requests.get(url, headers=headers)
 
     print("📡 Status Code:", response.status_code)
@@ -35,6 +28,8 @@ try:
 
 except Exception as e:
     print("❌ API call failed:", e)
+
+
 
 
 
