@@ -4,6 +4,9 @@ import requests
 import os
 import requests
 
+import os
+import requests
+
 print("🚀 Bot Started Successfully!")
 
 # Read credentials from Render environment variables
@@ -11,11 +14,11 @@ ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 APP_NAME = os.environ.get("APP_NAME")
 
 # Print for debug
-print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
+print("🔐 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
 print("📦 App Name:", APP_NAME)
 
-# Correct API URL
-url = "https://api.dhan.co/user-details"
+# ✅ Correct Dhan API URL for user profile
+url = "https://api.dhan.co/users/me"
 
 try:
     headers = {
