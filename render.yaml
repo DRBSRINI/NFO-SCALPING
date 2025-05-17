@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: dhan-bot
+    env: python
+    buildCommand: ""
+    startCommand: "python main.py"
+    envVars:
+      - key: CLIENT_ID
+        sync: false
+      - key: ACCESS_TOKEN
+        sync: false
+      - key: APP_NAME
+        sync: false
