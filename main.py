@@ -1,83 +1,30 @@
 import os
-import time
 import requests
-from datetime import datetime, timedelta
-print("🚀 Bot Started Successfully!")
 
-# === ENVIRONMENT VARIABLES ===
-CLIENT_ID = os.getenv("CLIENT_ID")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
-APP_NAME = os.getenv("APP_NAME", "SSAA")
+print("\U0001F680 Bot Started Successfully!")
 
-# === DHAN API ENDPOINTS ===
-ORDER_URL = "https://api.dhan.co/orders"
-LTP_URL = "https://api.dhan.co/market/quote"
-HEADERS = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-    "Access-Token": ACCESS_TOKEN,
-    "Client-Id": CLIENT_ID
-}
+# Read credentials from Render environment variables
+CLIENT_ID = os.environ.get("CLIENT_ID")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
+APP_NAME = os.environ.get("APP_NAME")
 
-# === SYMBOL CONFIG ===
-SYMBOL = "NIFTY 50"
-EXCHANGE_SEGMENT = "NSE"
-INSTRUMENT = {
-    "securityId": "1333",  # Example for NIFTY index
-    "symbol": SYMBOL,
-    "exchangeSegment": EXCHANGE_SEGMENT
-}
+# Print for debug
+print("\U0001F194 Client ID:", CLIENT_ID)
+print("\U0001F511 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
+print("\U0001F4E6 App Name:", APP_NAME)
 
-# === SIGNAL STRATEGY ===
-def is_buy_signal(candles):
-    if len(candles) < 3:
-        return False
-    c1 = candles[-3]
-    c2 = candles[-2]
-    return c2["close"] > c2["open"] and c2["close"] > c1["close"]
-
-# === HISTORICAL DATA ===
-def fetch_ohlc(symbol):
-    url = f"https://api.dhan.co/market/quotes/historical"
-    params = {
-        "securityId": INSTRUMENT["securityId"],
-        "exchangeSegment": INSTRUMENT["exchangeSegment"],
-        "instrument": SYMBOL,
-        "interval": "3minute",
-        "fromDate": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"),
-        "toDate": datetime.now().strftime("%Y-%m-%d")
+# Make a test API call to Dhan Profile endpoint
+try:
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/json"
     }
-    res = requests.get(url, headers=HEADERS, params=params)
-    return res.json().get("data", [])
 
-# === PLACE ORDER ===
-def place_order():
-    order_payload = {
-        "securityId": INSTRUMENT["securityId"],
-        "exchangeSegment": INSTRUMENT["exchangeSegment"],
-        "transactionType": "BUY",
-        "orderType": "MARKET",
-        "productType": "INTRADAY",
-        "quantity": 25,
-        "price": 0.0,
-        "disclosedQuantity": 0,
-        "orderValidity": "DAY",
-        "afterMarketOrder": False
-    }
-    response = requests.post(ORDER_URL, headers=HEADERS, json=order_payload)
-    print("📤 Order Response:", response.json())
+    url = f"https://api.dhan.co/accounts/{CLIENT_ID}/profile"
+    response = requests.get(url, headers=headers)
 
-# === MAIN ===
-if __name__ == "__main__":
-    while True:
-        try:
-            candles = fetch_ohlc(SYMBOL)
-            if is_buy_signal(candles):
-                print("✅ Buy Signal Triggered")
-                place_order()
-            else:
-                print("❌ No Signal")
-        except Exception as e:
-            print("⚠️ Error:", e)
+    print("\U0001F4E1 Status Code:", response.status_code)
+    print("\U0001F4EC Response:", response.json())
 
-        time.sleep(180)  # wait for 3 minutes
+except Exception as e:
+    print("❌ API call failed:", e)
