@@ -19,8 +19,8 @@ headers = {
     "Content-Type": "application/json"
 }
 
-# ✅ Correct user details endpoint
-url = "https://api.dhan.co/user-details"
+# ✅ Correct Dhan endpoint (camelCase)
+url = "https://api.dhan.co/userDetails"
 
 try:
     response = requests.get(url, headers=headers)
@@ -33,6 +33,8 @@ try:
 
 except Exception as e:
     print("⚠️ Exception occurred:", e)
+
+
 
     
 
