@@ -3,37 +3,38 @@ import requests
 
 print("🚀 Bot Started Successfully!")
 
-# Read credentials from environment
+# Read credentials from Render environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 APP_NAME = os.environ.get("APP_NAME")
 
-# Print for debug
+# Print for verification
 print("🆔 Client ID:", CLIENT_ID)
 print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
 print("📦 App Name:", APP_NAME)
 
-# Valid Dhan API endpoint (get account info)
-url = "https://api.dhan.co/accounts/profile"
-
+# Dhan API headers
 headers = {
     "Authorization": f"Bearer {ACCESS_TOKEN}",
     "Content-Type": "application/json"
 }
 
+# ✅ Correct user details endpoint
+url = "https://api.dhan.co/user-details"
+
 try:
     response = requests.get(url, headers=headers)
     print("📡 Status Code:", response.status_code)
-    
+
     if response.status_code == 200:
-        print("✅ Response:", response.json())
+        print("📊 Response:", response.json())
     else:
         print("❌ Error Response:", response.text)
 
 except Exception as e:
-    print("🚨 Exception occurred:", e)
+    print("⚠️ Exception occurred:", e)
 
-
+    
 
     
     
