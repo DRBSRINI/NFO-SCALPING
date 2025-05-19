@@ -1,23 +1,28 @@
 import os
 import requests
 
-print("🚀 Bot Started Successfully!")
+import os
 from dhanhq import dhanhq
 
-# Your credentials
-client_id = "1103110998"
-access_token = "eyJ0eX...bDLTsQ"
+print("🚀 Bot Started Successfully!")
 
-# Initialize SDK
-dhan = dhanhq(client_id, access_token)
+# Load credentials from environment
+client_id = os.environ.get("CLIENT_ID")
+access_token = os.environ.get("ACCESS_TOKEN")
 
-# Fetch Profile - CORRECT METHOD
+print("🆔 Client ID:", client_id)
+print("🔑 Access Token:", access_token[:6] + "..." + access_token[-6:])
+
+# Initialize Dhan API
+dhan = dhanhq(client_id=client_id, access_token=access_token)
+
+# ✅ Get profile using SDK (correct method)
 try:
-    profile = dhan.get_profile()
-    print("✅ Profile:")
-    print(profile)
+    profile = dhan.get_user_details()
+    print("📬 Profile response:", profile)
 except Exception as e:
-    print("❌ Error fetching profile:", e)
+    print("❌ Failed to fetch profile:", e)
+
 
 # Read credentials from Render environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID")
