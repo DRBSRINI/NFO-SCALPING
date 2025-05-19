@@ -2,39 +2,22 @@ import os
 import requests
 
 print("🚀 Bot Started Successfully!")
+from dhanhq import dhanhq
 
-# Get credentials
-ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
-APP_NAME = os.environ.get("APP_NAME")
+# Your credentials
+client_id = "1103110998"
+access_token = "eyJ0eX...bDLTsQ"
 
-# Debug info
-print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
-print("📦 App Name:", APP_NAME)
+# Initialize SDK
+dhan = dhanhq(client_id, access_token)
 
-# Correct endpoint
-url = "https://api.dhan.co/login"
-
-headers = {
-    "Authorization": f"Bearer {ACCESS_TOKEN}",
-    "Accept": "application/json",
-    "Content-Type": "application/json"
-}
-
+# Fetch Profile - CORRECT METHOD
 try:
-    response = requests.get(url, headers=headers)
-    print("📡 Status Code:", response.status_code)
-
-    try:
-        data = response.json()
-        print("📊 Response:", data)
-    except Exception as json_err:
-        print("⚠️ JSON Parsing Failed:", json_err)
-
+    profile = dhan.get_profile()
+    print("✅ Profile:")
+    print(profile)
 except Exception as e:
-    print("❌ API Request Failed:", e)
-
-
-   
+    print("❌ Error fetching profile:", e)
 
 # Read credentials from Render environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID")
