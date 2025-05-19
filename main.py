@@ -10,28 +10,26 @@ app_name = os.environ.get("APP_NAME")
 print("🔑 Access Token:", access_token[:6] + "..." + access_token[-6:])
 print("📦 App Name:", app_name)
 
+# Set headers
 headers = {
     "access-token": access_token,
     "Content-Type": "application/json",
     "Accept": "application/json"
 }
 
+# ✅ ONLY call the correct profile endpoint
 try:
-    
+    response = requests.get("https://api.dhan.co/v2/profile", headers=headers)
     print("📡 Status Code:", response.status_code)
 
     if response.status_code == 200:
         print("📬 Profile Data:", response.json())
     else:
-        print("❌ Failed to fetch profile:", response.text)
+        print("❌ Error fetching profile:", response.text)
+
 except Exception as e:
     print("❌ Exception occurred:", e)
-
-
-
-
-
-
+    
 # Read credentials from Render environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
