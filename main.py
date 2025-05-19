@@ -3,11 +3,11 @@ import requests
 
 print("🚀 Bot Started Successfully!")
 
-# Load environment variables
+# Load credentials
 access_token = os.environ.get("ACCESS_TOKEN")
 app_name = os.environ.get("APP_NAME")
 
-# Debug prints
+# Display info
 print("🔑 Access Token:", access_token[:6] + "..." + access_token[-6:])
 print("📦 App Name:", app_name)
 
@@ -18,7 +18,7 @@ headers = {
     "Accept": "application/json"
 }
 
-# Make the GET request to fetch profile
+# Fetch profile from Dhan
 try:
     response = requests.get("https://api.dhan.co/v2/profile", headers=headers)
     print("📡 Status Code:", response.status_code)
@@ -28,6 +28,7 @@ try:
         print("❌ Error fetching profile:", response.text)
 except Exception as e:
     print("❌ Exception occurred:", e)
+
 
 
 
