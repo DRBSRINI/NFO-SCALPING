@@ -3,16 +3,14 @@ import requests
 
 print("🚀 Bot Started Successfully!")
 
-# Read credentials from environment variables
-CLIENT_ID = os.environ.get("CLIENT_ID")
+# Read credentials from environment
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 APP_NAME = os.environ.get("APP_NAME")
 
-print("🆔 Client ID:", CLIENT_ID)
 print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
 print("📦 App Name:", APP_NAME)
 
-# Correct endpoint to verify authentication
+# Correct endpoint
 url = "https://api.dhan.co/users/me"
 
 headers = {
@@ -28,10 +26,10 @@ try:
     try:
         print("📊 Response:", response.json())
     except Exception as parse_error:
-        print("⚠️ Failed to parse response as JSON:", parse_error)
+        print("⚠️ JSON Parse Error:", parse_error)
 
 except Exception as e:
-    print("❌ Error making API request:", e)
+    print("❌ Request Failed:", e)
 
    
 
