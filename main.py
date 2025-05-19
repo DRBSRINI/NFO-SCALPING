@@ -17,7 +17,7 @@ headers = {
 }
 
 try:
-    response = requests.get("https://api.dhan.co/v2/profile", headers=headers)
+    
     print("📡 Status Code:", response.status_code)
 
     if response.status_code == 200:
