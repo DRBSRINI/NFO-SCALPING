@@ -1,29 +1,34 @@
 import os
 import requests
-import os
-from dhanhq import dhanhq
 
 print("🚀 Bot Started Successfully!")
 
 # Load environment variables
-client_id = os.environ.get("CLIENT_ID")
 access_token = os.environ.get("ACCESS_TOKEN")
 app_name = os.environ.get("APP_NAME")
 
 # Debug prints
-print("🆔 Client ID:", client_id)
 print("🔑 Access Token:", access_token[:6] + "..." + access_token[-6:])
 print("📦 App Name:", app_name)
 
-# Initialize SDK
-dhan = dhanhq(client_id=client_id, access_token=access_token)
+# Set headers
+headers = {
+    "access-token": access_token,
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+}
 
-# ✅ Correct method to fetch user details
+# Make the GET request to fetch profile
 try:
-    profile = dhan.get_client_master()
-    print("📬 Profile Data:", profile)
+    response = requests.get("https://api.dhan.co/v2/profile", headers=headers)
+    print("📡 Status Code:", response.status_code)
+    if response.status_code == 200:
+        print("📬 Profile Data:", response.json())
+    else:
+        print("❌ Error fetching profile:", response.text)
 except Exception as e:
-    print("❌ Failed to fetch profile:", e)
+    print("❌ Exception occurred:", e)
+
 
 
 
