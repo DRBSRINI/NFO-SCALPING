@@ -12,7 +12,7 @@ print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
 print("📦 App Name:", APP_NAME)
 
 # Correct endpoint
-url = "https://api.dhan.co/oauth2/token"
+url = "https://api.dhan.co/login"
 
 headers = {
     "Authorization": f"Bearer {ACCESS_TOKEN}",
