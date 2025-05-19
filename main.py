@@ -3,20 +3,21 @@ import requests
 
 print("🚀 Bot Started Successfully!")
 
-# Read credentials from environment
+# Get credentials
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 APP_NAME = os.environ.get("APP_NAME")
 
+# Debug info
 print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
 print("📦 App Name:", APP_NAME)
 
 # Correct endpoint
-url = "https://api.dhan.co/users/me"
+url = "https://api.dhan.co/oauth2/token"
 
 headers = {
     "Authorization": f"Bearer {ACCESS_TOKEN}",
-    "Content-Type": "application/json",
-    "Accept": "application/json"
+    "Accept": "application/json",
+    "Content-Type": "application/json"
 }
 
 try:
@@ -24,12 +25,14 @@ try:
     print("📡 Status Code:", response.status_code)
 
     try:
-        print("📊 Response:", response.json())
-    except Exception as parse_error:
-        print("⚠️ JSON Parse Error:", parse_error)
+        data = response.json()
+        print("📊 Response:", data)
+    except Exception as json_err:
+        print("⚠️ JSON Parsing Failed:", json_err)
 
 except Exception as e:
-    print("❌ Request Failed:", e)
+    print("❌ API Request Failed:", e)
+
 
    
 
