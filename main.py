@@ -3,40 +3,34 @@ import requests
 
 print("🚀 Bot Started Successfully!")
 
-# ✅ FIRST: Load credentials
+# ✅ Load required environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID", "1103110998")
-ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "your_access_token_here")
-APP_NAME = os.environ.get("APP_NAME", "NFO-SCALPER")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "your_actual_access_token")
 
-# ✅ THEN: Use them in your logic
-DHANHQ = (CLIENT_ID, ACCESS_TOKEN)
+# ✅ Create DHAN object (you can later use this with a class/method)
+DHAN = (CLIENT_ID, ACCESS_TOKEN)  # Placeholder structure for your use
 
-# ✅ Debug print
+# ✅ Print only important info
 print("🆔 Client ID:", CLIENT_ID)
 print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
-print("📦 App Name:", APP_NAME)
 
-# ✅ Make request to Dhan Profile API
+# ✅ Correct headers for DhanHQ
 headers = {
     "access-token": ACCESS_TOKEN,
-    "Content-Type": "application/json",
-    "Accept": "application/json"
+    "Accept": "application/json",
+    "Content-Type": "application/json"
 }
 
+# ✅ API call to get profile
 try:
     response = requests.get("https://api.dhan.co/v2/profile", headers=headers)
     print("📡 Status Code:", response.status_code)
-
     if response.status_code == 200:
         print("📬 Profile Data:", response.json())
     else:
         print("❌ Error:", response.text)
-
 except Exception as e:
-    print("❌ Exception occurred:", e)
-
-
-    
+    print("❌ Exception occurred:", e) 
     
 # Read credentials from Render environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID")
