@@ -8,7 +8,7 @@ CLIENT_ID = os.environ.get("CLIENT_ID", "1103110998")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzQ4OTU3MzE1LCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwMzExMDk5OCJ9.63JJ5I2xkyChgmHYg4Nl3zRkDz5SJl4AWmJljJ0rgUkGVxnQ6z3uUDZM47dQNSKaiimygNJz5jkVHBqyoDe1aw")
 
 # ✅ Create DHAN object (you can later use this with a class/method)
-DHAN = (CLIENT_ID, ACCESS_TOKEN)  # Placeholder structure for your use
+DHAN = DHANHQ(CLIENT_ID, ACCESS_TOKEN)  # Placeholder structure for your use
 
 # ✅ Print only important info
 print("🆔 Client ID:", CLIENT_ID)
