@@ -3,24 +3,26 @@ import requests
 
 print("🚀 Bot Started Successfully!")
 
-# Load credentials
-client_id = os .environ.get("CLIENT_ID","1103110998")
-access_token = os.environ.get("ACCESS_TOKEN","eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzQ4OTU3MzE1LCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwMzExMDk5OCJ9.63JJ5I2xkyChgmHYg4Nl3zRkDz5SJl4AWmJljJ0rgUkGVxnQ6z3uUDZM47dQNSKaiimygNJz5jkVHBqyoDe1aw")
-app_name = os.environ.get("APP_NAME")
-dhan = os . environ.get("DHANHQ")
-DHANHQ = (CLIENT_ID,ACCESS_TOKEN)
+# ✅ FIRST: Load credentials
+CLIENT_ID = os.environ.get("CLIENT_ID", "1103110998")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "your_access_token_here")
+APP_NAME = os.environ.get("APP_NAME", "NFO-SCALPER")
 
-print("🔑 Access Token:", access_token[:6] + "..." + access_token[-6:])
-print("📦 App Name:", app_name)
+# ✅ THEN: Use them in your logic
+DHANHQ = (CLIENT_ID, ACCESS_TOKEN)
 
-# Set headers
+# ✅ Debug print
+print("🆔 Client ID:", CLIENT_ID)
+print("🔑 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
+print("📦 App Name:", APP_NAME)
+
+# ✅ Make request to Dhan Profile API
 headers = {
-    "access-token": access_token,
+    "access-token": ACCESS_TOKEN,
     "Content-Type": "application/json",
     "Accept": "application/json"
 }
 
-# ✅ ONLY call the correct profile endpoint
 try:
     response = requests.get("https://api.dhan.co/v2/profile", headers=headers)
     print("📡 Status Code:", response.status_code)
@@ -28,10 +30,13 @@ try:
     if response.status_code == 200:
         print("📬 Profile Data:", response.json())
     else:
-        print("❌ Error fetching profile:", response.text)
+        print("❌ Error:", response.text)
 
 except Exception as e:
     print("❌ Exception occurred:", e)
+
+
+    
     
 # Read credentials from Render environment variables
 CLIENT_ID = os.environ.get("CLIENT_ID")
