@@ -5,7 +5,7 @@ print("🚀 Bot Started Successfully!")
 
 # Load credentials
 client_id = os .environ.get("CLIENT_ID","1103110998")
-access_token = os.environ.get("ACCESS_TOKEN")
+access_token = os.environ.get("ACCESS_TOKEN","eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzQ4OTU3MzE1LCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwMzExMDk5OCJ9.63JJ5I2xkyChgmHYg4Nl3zRkDz5SJl4AWmJljJ0rgUkGVxnQ6z3uUDZM47dQNSKaiimygNJz5jkVHBqyoDe1aw")
 app_name = os.environ.get("APP_NAME")
 dhan = os . environ.get("DHANHQ")
 DHANHQ = (CLIENT_ID,ACCESS_TOKEN)
