@@ -1,7 +1,7 @@
 import os
 import time
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 print("\U0001F680 Bot Started Successfully!")
 
@@ -22,37 +22,92 @@ HEADERS = {
 # --- CONFIG ---
 ENTRY_START_TIME = "09:26"
 ENTRY_END_TIME = "15:00"
-MAX_TRADES_PER_TYPE = 5
 STOP_LOSS_POINTS = 50
 TARGET_POINTS = 25
 TRAILING_SL_STEP = 5
 MAX_ALLOCATION = 70000
-QUANTITY = 50  # 1 lot assumed
+QUANTITY = 50
 ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
-SYMBOL_CE = "NIFTY_CE_ATM"  # placeholder
-SYMBOL_PE = "NIFTY_PE_ATM"  # placeholder
+SYMBOL_CE = "NIFTY_CE_ATM"
+SYMBOL_PE = "NIFTY_PE_ATM"
 
-# Trade tracker
 ce_trades = 0
 pe_trades = 0
 open_trades = []
 
-# --- PLACEHOLDER FUNCTIONS ---
-def get_latest_price(symbol):
-    # Simulate fetching latest price
-    url = f"https://api.dhan.co/market/quote/{symbol}"
-    response = requests.get(url, headers=HEADERS)
-    if response.status_code == 200:
-        return response.json()['close']
-    else:
-        print("❌ Price fetch failed:", response.text)
-        return None
+# --- UTILS ---
+def fetch_candles(symbol, interval, limit=2):
+    url = f"https://api.dhan.co/market/candles?symbol={symbol}&interval={interval}&limit={limit}"
+    try:
+        response = requests.get(url, headers=HEADERS)
+        if response.status_code == 200:
+            return response.json()['candles']
+        else:
+            print(f"❌ Candle fetch error ({interval}):", response.text)
+            return []
+    except Exception as e:
+        print("❌ Candle API Exception:", e)
+        return []
 
-def get_multitimeframe_signal():
-    # Placeholder: integrate with real MTF indicators in future
+def compute_rsi(closes, period=14):
+    if len(closes) < period + 1:
+        return None
+    gains = []
+    losses = []
+    for i in range(1, period + 1):
+        diff = closes[-i] - closes[-i - 1]
+        if diff > 0:
+            gains.append(diff)
+        else:
+            losses.append(abs(diff))
+    avg_gain = sum(gains) / period
+    avg_loss = sum(losses) / period
+    if avg_loss == 0:
+        return 100
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+def get_multitimeframe_signal(symbol):
+    intervals = {"3m": "3minute", "15m": "15minute", "1h": "1hour"}
+    prices = {}
+
+    for label, interval in intervals.items():
+        candles = fetch_candles(symbol, interval)
+        if len(candles) < 2:
+            return False
+        c0 = candles[-1]['close']
+        c1 = candles[-2]['close']
+        prices[label] = (c0, c1)
+
+    # Rule checks
+    for key in prices:
+        c0, c1 = prices[key]
+        if c0 <= c1:
+            return False
+        if (c0 - c1) / c1 < 0.01:
+            return False
+
+    rsi_candles = fetch_candles(symbol, "3minute", limit=16)
+    if len(rsi_candles) < 15:
+        return False
+    close_prices = [x['close'] for x in rsi_candles]
+    rsi = compute_rsi(close_prices)
+    if rsi is None or rsi < 35 or rsi > 65:
+        return False
+
     return True
+
+def get_latest_price(symbol):
+    url = f"https://api.dhan.co/market/quote/{symbol}"
+    try:
+        response = requests.get(url, headers=HEADERS)
+        if response.status_code == 200:
+            return response.json()['close']
+    except Exception as e:
+        print("❌ Price fetch failed:", e)
+    return None
 
 def place_order(symbol, qty, price):
     payload = {
@@ -65,20 +120,19 @@ def place_order(symbol, qty, price):
         "product_type": "INTRADAY",
         "validity": "DAY"
     }
-    response = requests.post("https://api.dhan.co/orders", headers=HEADERS, json=payload)
-    if response.status_code == 200:
-        print(f"✅ Order placed: {symbol} @ {price}")
-        return response.json()
-    else:
-        print("❌ Order error:", response.text)
-        return None
+    try:
+        response = requests.post("https://api.dhan.co/orders", headers=HEADERS, json=payload)
+        if response.status_code == 200:
+            print(f"✅ Order placed: {symbol} @ {price}")
+            return response.json()
+        else:
+            print("❌ Order error:", response.text)
+    except Exception as e:
+        print("❌ Order exception:", e)
+    return None
 
 def manage_open_trade(entry_price, current_price, sl, tp, tsl, direction):
-    if direction == "CE":
-        move = current_price - entry_price
-    else:
-        move = entry_price - current_price
-
+    move = current_price - entry_price if direction == "CE" else entry_price - current_price
     if move >= tp:
         print("🎯 Target hit. Close position.")
         return "exit"
@@ -107,9 +161,10 @@ while True:
         print("✅ Max trades done for the day.")
         break
 
-    if get_multitimeframe_signal():
-        option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
-        symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
+    option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
+    symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
+
+    if get_multitimeframe_signal(symbol):
         price = get_latest_price(symbol)
         if not price:
             continue
