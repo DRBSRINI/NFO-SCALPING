@@ -4,8 +4,11 @@ import requests
 print("🚀 Bot Started Successfully!")
 
 # Load credentials
+client_id = os .environ . get("CLIENT_ID")
 access_token = os.environ.get("ACCESS_TOKEN")
 app_name = os.environ.get("APP_NAME")
+dhan = os . environ.get("DHANHQ")
+DHANHQ = (CLIENT_ID,ACCESS_TOKEN)
 
 print("🔑 Access Token:", access_token[:6] + "..." + access_token[-6:])
 print("📦 App Name:", app_name)
