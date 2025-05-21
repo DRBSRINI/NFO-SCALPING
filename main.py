@@ -31,8 +31,7 @@ ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
 # Replace with actual Dhan instrument security IDs:
-SYMBOL_CE = "13393520"  # Example: NIFTY 22500 CE
-SYMBOL_PE = "13393521"  # Example: NIFTY 22500 PE
+symbol = "NSE_INDEX_NIFTY"  # replace with actual index security_id if needed
 
 ce_trades = 0
 pe_trades = 0
