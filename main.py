@@ -31,7 +31,8 @@ ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
 # Replace with actual Dhan instrument security IDs:
-symbol = "NSE_INDEX_NIFTY"  # replace with actual index security_id if needed
+SYMBOL_CE = "12599298"  # Example: NIFTY 24750 CE
+SYMBOL_PE = "12604674"  # Example: NIFTY 24950 PE
 
 ce_trades = 0
 pe_trades = 0
@@ -86,7 +87,7 @@ def get_multitimeframe_signal(symbol):
         c0, c1 = prices[key]
         if c0 <= c1:
             return False
-        if (c0 - c1) / c1 < 0.003:  # Relaxed from 1% to 0.3%
+        if (c0 - c1) / c1 < 0.01:  # 1% change required
             return False
 
     rsi_candles = fetch_candles(symbol, "3minute", limit=16)
@@ -94,7 +95,7 @@ def get_multitimeframe_signal(symbol):
         return False
     close_prices = [x['close'] for x in rsi_candles]
     rsi = compute_rsi(close_prices)
-    if rsi is None or rsi < 30 or rsi > 70:  # Loosened range
+    if rsi is None or rsi < 35 or rsi > 65:
         return False
 
     return True
