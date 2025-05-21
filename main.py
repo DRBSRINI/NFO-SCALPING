@@ -30,9 +30,13 @@ QUANTITY = 50
 ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
-# Replace with actual Dhan instrument security IDs:
-SYMBOL_CE = "12599298"  # Example: NIFTY 24750 CE
-SYMBOL_PE = "12604674"  # Example: NIFTY 24950 PE
+
+# Index symbol for signal logic
+INDEX_SYMBOL = "NSE_INDEX_NIFTY"
+
+# Replace with actual Dhan instrument security IDs for order placement:
+SYMBOL_CE = "13393520"  # Example: NIFTY 22500 CE
+SYMBOL_PE = "13393521"  # Example: NIFTY 22500 PE
 
 ce_trades = 0
 pe_trades = 0
@@ -70,12 +74,12 @@ def compute_rsi(closes, period=14):
     rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
 
-def get_multitimeframe_signal(symbol):
+def get_multitimeframe_signal():
     intervals = {"3m": "3minute", "15m": "15minute", "1h": "1hour"}
     prices = {}
 
     for label, interval in intervals.items():
-        candles = fetch_candles(symbol, interval)
+        candles = fetch_candles(INDEX_SYMBOL, interval)
         if len(candles) < 2:
             return False
         c0 = candles[-1]['close']
@@ -87,10 +91,10 @@ def get_multitimeframe_signal(symbol):
         c0, c1 = prices[key]
         if c0 <= c1:
             return False
-        if (c0 - c1) / c1 < 0.01:  # 1% change required
+        if (c0 - c1) / c1 < 0.01:
             return False
 
-    rsi_candles = fetch_candles(symbol, "3minute", limit=16)
+    rsi_candles = fetch_candles(INDEX_SYMBOL, "3minute", limit=16)
     if len(rsi_candles) < 15:
         return False
     close_prices = [x['close'] for x in rsi_candles]
@@ -163,18 +167,18 @@ while True:
         break
 
     option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
-    symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
+    trade_symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
 
-    if get_multitimeframe_signal(symbol):
-        price = get_latest_price(symbol)
+    if get_multitimeframe_signal():
+        price = get_latest_price(trade_symbol)
         if not price:
             continue
 
         limit_price = round(price + BUFFER if option_type == "CE" else price - BUFFER, 2)
-        order = place_order(symbol, QUANTITY, limit_price)
+        order = place_order(trade_symbol, QUANTITY, limit_price)
         if order:
             trade = {
-                "symbol": symbol,
+                "symbol": trade_symbol,
                 "entry_price": limit_price,
                 "sl": STOP_LOSS_POINTS,
                 "tp": TARGET_POINTS,
