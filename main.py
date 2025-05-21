@@ -30,14 +30,29 @@ QUANTITY = 50
 ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
-SYMBOL_CE = "NIFTY_CE_ATM"
-SYMBOL_PE = "NIFTY_PE_ATM"
+INDEX_SYMBOL = "NSE_INDEX|Nifty 50"
 
 ce_trades = 0
 pe_trades = 0
 open_trades = []
 
 # --- UTILS ---
+def get_atm_option_tokens():
+    url = f"https://api.dhan.co/option-chain/indices/{INDEX_SYMBOL}"
+    try:
+        response = requests.get(url, headers=HEADERS)
+        if response.status_code == 200:
+            data = response.json()
+            atm_ce = data.get("atmCall", {}).get("securityId")
+            atm_pe = data.get("atmPut", {}).get("securityId")
+            print(f"🔍 Fetched ATM CE: {atm_ce}, ATM PE: {atm_pe}")
+            return atm_ce, atm_pe
+        else:
+            print("❌ Failed to fetch ATM option tokens:", response.text)
+    except Exception as e:
+        print("❌ Exception while fetching ATM tokens:", e)
+    return None, None
+
 def fetch_candles(symbol, interval, limit=2):
     url = f"https://api.dhan.co/market/candles?symbol={symbol}&interval={interval}&limit={limit}"
     try:
@@ -76,27 +91,28 @@ def get_multitimeframe_signal(symbol):
     for label, interval in intervals.items():
         candles = fetch_candles(symbol, interval)
         if len(candles) < 2:
+            print(f"⚠️ Not enough candles for {interval}")
             return False
         c0 = candles[-1]['close']
         c1 = candles[-2]['close']
         prices[label] = (c0, c1)
-
-    # Rule checks
-    for key in prices:
-        c0, c1 = prices[key]
-        if c0 <= c1:
-            return False
-        if (c0 - c1) / c1 < 0.01:
+        print(f"{label} Close(0): {c0}, Close(-1): {c1}, Change: {((c0 - c1)/c1)*100:.2f}%")
+        if c0 <= c1 or (c0 - c1)/c1 < 0.01:
+            print(f"⛔ Price condition failed for {label}")
             return False
 
     rsi_candles = fetch_candles(symbol, "3minute", limit=16)
     if len(rsi_candles) < 15:
+        print("⚠️ Not enough RSI candles")
         return False
     close_prices = [x['close'] for x in rsi_candles]
     rsi = compute_rsi(close_prices)
+    print(f"🔍 RSI(14): {rsi:.2f}")
     if rsi is None or rsi < 35 or rsi > 65:
+        print("⛔ RSI condition not met")
         return False
 
+    print("✅ Signal confirmed!")
     return True
 
 def get_latest_price(symbol):
@@ -162,7 +178,13 @@ while True:
         break
 
     option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
-    symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
+    atm_ce, atm_pe = get_atm_option_tokens()
+    if not atm_ce or not atm_pe:
+        print("⚠️ Skipping due to missing ATM tokens")
+        time.sleep(30)
+        continue
+
+    symbol = atm_ce if option_type == "CE" else atm_pe
 
     if get_multitimeframe_signal(symbol):
         price = get_latest_price(symbol)
