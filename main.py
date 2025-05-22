@@ -21,7 +21,7 @@ HEADERS = {
 }
 
 # --- CONFIG ---
-ENTRY_START_TIME = "09:26"
+ENTRY_START_TIME = "09:15"
 ENTRY_END_TIME = "15:00"
 STOP_LOSS_POINTS = 50
 TARGET_POINTS = 25
@@ -32,10 +32,9 @@ ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
 
-SIGNAL_SYMBOL = "1330"  # This is usually NIFTY 50 index security ID on Dhan (verify from Dhan API or watchlist)
+SIGNAL_SYMBOL = "1330"  # NIFTY 50 Index (verify from Dhan)
 SYMBOL_CE = "12599298"
 SYMBOL_PE = "12604674"
-
 
 ce_trades = 0
 pe_trades = 0
@@ -47,13 +46,12 @@ def fetch_candles(symbol, interval, limit=100):
     try:
         response = requests.get(url, headers=HEADERS)
         if response.status_code == 200:
-            return response.json()['candles']
+            return response.json().get('candles', [])
         else:
             print(f"❌ Candle fetch error ({interval}):", response.text)
-            return []
     except Exception as e:
         print("❌ Candle API Exception:", e)
-        return []
+    return []
 
 def compute_ema(prices, period):
     return pd.Series(prices).ewm(span=period).mean().tolist()
@@ -61,23 +59,28 @@ def compute_ema(prices, period):
 def get_macd_and_ema_signal(symbol):
     candles = fetch_candles(symbol, "3minute", 100)
     if len(candles) < 30:
+        print("⚠️ Not enough candles")
         return False
 
-    close_prices = [x['close'] for x in candles]
+    close_prices = [x['close'] for x in candles[:-1]]  # skip the forming candle
+
     ema5 = compute_ema(close_prices, 5)
     ema8 = compute_ema(close_prices, 8)
     ema13 = compute_ema(close_prices, 13)
 
-    # EMA logic
-    if not (ema5[-1] > ema8[-1] > ema13[-1] and ema5[-1] > ema5[-2] and ema8[-1] > ema8[-2]):
+    ema_up = ema5[-1] > ema8[-1] > ema13[-1] and ema5[-1] > ema5[-2] and ema8[-1] > ema8[-2]
+    if not ema_up:
+        print("⚠️ EMA condition not met")
         return False
 
-    # MACD logic
     macd_line = pd.Series(close_prices).ewm(span=12).mean() - pd.Series(close_prices).ewm(span=26).mean()
     signal_line = macd_line.ewm(span=9).mean()
     hist = macd_line - signal_line
 
+    print(f"📊 MACD: {macd_line.iloc[-1]:.2f}, Signal: {signal_line.iloc[-1]:.2f}, Hist: {hist.iloc[-1]:.2f}")
+
     if macd_line.iloc[-1] <= signal_line.iloc[-1] or hist.iloc[-1] <= 0:
+        print("⚠️ MACD condition not met")
         return False
 
     return True
@@ -87,7 +90,7 @@ def get_latest_price(symbol):
     try:
         response = requests.get(url, headers=HEADERS)
         if response.status_code == 200:
-            return response.json()['close']
+            return response.json().get('close')
     except Exception as e:
         print("❌ Price fetch failed:", e)
     return None
