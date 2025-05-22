@@ -31,12 +31,10 @@ ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
 
-# Index symbol for signal logic
-INDEX_SYMBOL = "NSE_INDEX_NIFTY"
-
-# Replace with actual Dhan instrument security IDs for order placement:
-SYMBOL_CE = "13393520"  # Example: NIFTY 22500 CE
-SYMBOL_PE = "13393521"  # Example: NIFTY 22500 PE
+# Replace with actual Dhan instrument security IDs:
+SYMBOL_CE = "12599298"  # NIFTY 22nd MAY 24750 CE
+SYMBOL_PE = "12604674"  # NIFTY 22nd MAY 24950 PE
+INDEX_SECURITY_ID = "11536"  # Replace with actual NIFTY 50 index ID from Dhan
 
 ce_trades = 0
 pe_trades = 0
@@ -79,14 +77,13 @@ def get_multitimeframe_signal():
     prices = {}
 
     for label, interval in intervals.items():
-        candles = fetch_candles(INDEX_SYMBOL, interval)
+        candles = fetch_candles(INDEX_SECURITY_ID, interval)
         if len(candles) < 2:
             return False
         c0 = candles[-1]['close']
         c1 = candles[-2]['close']
         prices[label] = (c0, c1)
 
-    # Rule checks
     for key in prices:
         c0, c1 = prices[key]
         if c0 <= c1:
@@ -94,7 +91,7 @@ def get_multitimeframe_signal():
         if (c0 - c1) / c1 < 0.01:
             return False
 
-    rsi_candles = fetch_candles(INDEX_SYMBOL, "3minute", limit=16)
+    rsi_candles = fetch_candles(INDEX_SECURITY_ID, "3minute", limit=16)
     if len(rsi_candles) < 15:
         return False
     close_prices = [x['close'] for x in rsi_candles]
@@ -167,18 +164,18 @@ while True:
         break
 
     option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
-    trade_symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
+    symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
 
     if get_multitimeframe_signal():
-        price = get_latest_price(trade_symbol)
+        price = get_latest_price(symbol)
         if not price:
             continue
 
         limit_price = round(price + BUFFER if option_type == "CE" else price - BUFFER, 2)
-        order = place_order(trade_symbol, QUANTITY, limit_price)
+        order = place_order(symbol, QUANTITY, limit_price)
         if order:
             trade = {
-                "symbol": trade_symbol,
+                "symbol": symbol,
                 "entry_price": limit_price,
                 "sl": STOP_LOSS_POINTS,
                 "tp": TARGET_POINTS,
