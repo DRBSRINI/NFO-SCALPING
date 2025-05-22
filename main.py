@@ -147,7 +147,7 @@ while True:
     option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
     symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
 
-    if get_macd_and_ema_signal(symbol):
+    if get_macd_and_ema_signal(SIGNAL_SYMBOL):
         price = get_latest_price(symbol)
         if not price:
             continue
