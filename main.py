@@ -2,6 +2,7 @@ import os
 import time
 import requests
 from datetime import datetime
+import pandas as pd
 
 print("\U0001F680 Bot Started Successfully!")
 
@@ -31,17 +32,15 @@ ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
 
-# Replace with actual Dhan instrument security IDs:
-SYMBOL_CE = "12599298"  # NIFTY 22nd MAY 24750 CE
-SYMBOL_PE = "12604674"  # NIFTY 22nd MAY 24950 PE
-INDEX_SECURITY_ID = "11536"  # Replace with actual NIFTY 50 index ID from Dhan
+SYMBOL_CE = "12599298"
+SYMBOL_PE = "12604674"
 
 ce_trades = 0
 pe_trades = 0
 open_trades = []
 
 # --- UTILS ---
-def fetch_candles(symbol, interval, limit=2):
+def fetch_candles(symbol, interval, limit=100):
     url = f"https://api.dhan.co/market/candles?security_id={symbol}&interval={interval}&limit={limit}"
     try:
         response = requests.get(url, headers=HEADERS)
@@ -54,49 +53,29 @@ def fetch_candles(symbol, interval, limit=2):
         print("❌ Candle API Exception:", e)
         return []
 
-def compute_rsi(closes, period=14):
-    if len(closes) < period + 1:
-        return None
-    gains = []
-    losses = []
-    for i in range(1, period + 1):
-        diff = closes[-i] - closes[-i - 1]
-        if diff > 0:
-            gains.append(diff)
-        else:
-            losses.append(abs(diff))
-    avg_gain = sum(gains) / period
-    avg_loss = sum(losses) / period
-    if avg_loss == 0:
-        return 100
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
+def compute_ema(prices, period):
+    return pd.Series(prices).ewm(span=period).mean().tolist()
 
-def get_multitimeframe_signal():
-    intervals = {"3m": "3minute", "15m": "15minute", "1h": "1hour"}
-    prices = {}
-
-    for label, interval in intervals.items():
-        candles = fetch_candles(INDEX_SECURITY_ID, interval)
-        if len(candles) < 2:
-            return False
-        c0 = candles[-1]['close']
-        c1 = candles[-2]['close']
-        prices[label] = (c0, c1)
-
-    for key in prices:
-        c0, c1 = prices[key]
-        if c0 <= c1:
-            return False
-        if (c0 - c1) / c1 < 0.01:
-            return False
-
-    rsi_candles = fetch_candles(INDEX_SECURITY_ID, "3minute", limit=16)
-    if len(rsi_candles) < 15:
+def get_macd_and_ema_signal(symbol):
+    candles = fetch_candles(symbol, "3minute", 100)
+    if len(candles) < 30:
         return False
-    close_prices = [x['close'] for x in rsi_candles]
-    rsi = compute_rsi(close_prices)
-    if rsi is None or rsi < 35 or rsi > 65:
+
+    close_prices = [x['close'] for x in candles]
+    ema5 = compute_ema(close_prices, 5)
+    ema8 = compute_ema(close_prices, 8)
+    ema13 = compute_ema(close_prices, 13)
+
+    # EMA logic
+    if not (ema5[-1] > ema8[-1] > ema13[-1] and ema5[-1] > ema5[-2] and ema8[-1] > ema8[-2]):
+        return False
+
+    # MACD logic
+    macd_line = pd.Series(close_prices).ewm(span=12).mean() - pd.Series(close_prices).ewm(span=26).mean()
+    signal_line = macd_line.ewm(span=9).mean()
+    hist = macd_line - signal_line
+
+    if macd_line.iloc[-1] <= signal_line.iloc[-1] or hist.iloc[-1] <= 0:
         return False
 
     return True
@@ -166,7 +145,7 @@ while True:
     option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
     symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
 
-    if get_multitimeframe_signal():
+    if get_macd_and_ema_signal(symbol):
         price = get_latest_price(symbol)
         if not price:
             continue
