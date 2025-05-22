@@ -32,8 +32,10 @@ ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
 
+SIGNAL_SYMBOL = "1330"  # This is usually NIFTY 50 index security ID on Dhan (verify from Dhan API or watchlist)
 SYMBOL_CE = "12599298"
 SYMBOL_PE = "12604674"
+
 
 ce_trades = 0
 pe_trades = 0
