@@ -150,8 +150,7 @@ while True:
     option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
     symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
 
-    if get_macd_and_ema_signal(symbol):  # this evaluates the strategy on the actual trading instrument
-
+    if get_macd_and_ema_signal(symbol):  # FIXED: apply signal on actual option candle, not index
         price = get_latest_price(symbol)
         if not price:
             continue
