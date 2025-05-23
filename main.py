@@ -127,10 +127,29 @@ def manage_open_trade(entry_price, current_price, sl, tp, tsl, direction):
     return "hold"
 
 def initialize_market_feed():
-    """Initialize and connect to market feed"""
-    if not feed.connect_websocket():
-        print("❌ Failed to connect to market feed")
-        return False
+    """Initialize and connect to market feed with retry logic"""
+    max_retries = 3
+    retry_delay = 5  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            if feed.connect_websocket():
+                # Verify connection by checking for initial data
+                time.sleep(2)  # Wait for initial data
+                if feed.connected:
+                    # Subscribe to required symbols
+                    feed.subscribe_to_symbols([SIGNAL_SYMBOL, SYMBOL_CE, SYMBOL_PE])
+                    return True
+            
+            logging.warning(f"Connection attempt {attempt + 1} failed. Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+            
+        except Exception as e:
+            logging.error(f"Initialization error: {e}")
+            time.sleep(retry_delay)
+    
+    logging.error("Failed to establish market feed connection after multiple attempts")
+    return False
     
     # Subscribe to required symbols
     feed.subscribe_to_symbols([SIGNAL_SYMBOL, SYMBOL_CE, SYMBOL_PE])
