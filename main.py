@@ -2,7 +2,6 @@ import os
 import time
 import logging
 from datetime import datetime
-import pandas as pd
 from dhan_market_feed import DhanOptionsMarketFeed
 
 # Initialize logging
@@ -14,73 +13,40 @@ logging.basicConfig(
     ]
 )
 
-print("\U0001F680 Bot Started Successfully!")
+def main():
+    print("\U0001F680 Bot Started Successfully!")
 
-# Load credentials
-CLIENT_ID = os.getenv("CLIENT_ID")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+    # Load credentials
+    CLIENT_ID = os.getenv("CLIENT_ID")
+    ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
-# Verify credentials
-if not CLIENT_ID or not ACCESS_TOKEN:
-    logging.error("Missing DHAN credentials. Please set CLIENT_ID and ACCESS_TOKEN environment variables.")
-    exit(1)
+    if not CLIENT_ID or not ACCESS_TOKEN:
+        logging.error("Missing DHAN credentials")
+        return
 
-print(f"\U0001F194 Client ID: {CLIENT_ID}")
-print(f"\U0001F511 Access Token: {ACCESS_TOKEN[:6]}...{ACCESS_TOKEN[-6:]}")
+    print(f"\U0001F194 Client ID: {CLIENT_ID}")
+    print(f"\U0001F511 Access Token: {ACCESS_TOKEN[:6]}...{ACCESS_TOKEN[-6:]}")
 
-# Initialize DHAN Market Feed
-feed = DhanOptionsMarketFeed(CLIENT_ID, ACCESS_TOKEN)
+    # Initialize market feed
+    feed = DhanOptionsMarketFeed(CLIENT_ID, ACCESS_TOKEN)
 
-# --- CONFIG ---
-ENTRY_START_TIME = "09:15"
-ENTRY_END_TIME = "15:00"
-STOP_LOSS_POINTS = 50
-TARGET_POINTS = 25
-TRAILING_SL_STEP = 5
-MAX_ALLOCATION = 70000
-QUANTITY = 50
-ORDER_TYPE = "LIMIT"
-BUFFER = 0.05
-DAILY_TRADE_LIMIT = 5
+    # Configuration
+    SYMBOLS = ["1330", "12599298", "12604674"]  # NIFTY index and options
 
-SIGNAL_SYMBOL = "1330"  # NIFTY 50 Index
-SYMBOL_CE = "12599298"  # Example NIFTY CE
-SYMBOL_PE = "12604674"  # Example NIFTY PE
-
-ce_trades = 0
-pe_trades = 0
-open_trades = []
-
-def initialize_market_feed():
-    """Initialize and connect to market feed with retry logic"""
-    max_retries = 3
-    retry_delay = 5  # seconds
-    
-    for attempt in range(1, max_retries + 1):
-        logging.info(f"Attempt {attempt} to connect to market feed...")
-        
-        if feed.connect_websocket():
-            # Verify connection by checking for initial data
-            time.sleep(2)  # Wait for initial data
-            
-            if feed.connected:
-                # Subscribe to required symbols
-                symbols = [SIGNAL_SYMBOL, SYMBOL_CE, SYMBOL_PE]
-                if feed.subscribe_to_symbols(symbols):
-                    logging.info("Market feed initialized successfully")
+    def initialize_feed():
+        """Initialize market feed with retry logic"""
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            logging.info(f"Connection attempt {attempt}/{max_retries}")
+            if feed.connect_websocket():
+                if feed.subscribe_to_symbols(SYMBOLS):
                     return True
-        
-        logging.warning(f"Connection attempt {attempt} failed. Retrying in {retry_delay} seconds...")
-        time.sleep(retry_delay)
-    
-    logging.error(f"Failed to establish market feed connection after {max_retries} attempts")
-    return False
+            time.sleep(5)
+        return False
 
-# ... [rest of your existing trading functions] ...
-
-if __name__ == "__main__":
-    if not initialize_market_feed():
-        exit(1)
+    if not initialize_feed():
+        logging.error("Failed to initialize market feed")
+        return
 
     try:
         # Main trading loop
@@ -88,22 +54,20 @@ if __name__ == "__main__":
             now = datetime.now()
             current_time = now.strftime("%H:%M")
             logging.info(f"Current time: {current_time}")
-            
-            # Check if we should be trading
-            if current_time < ENTRY_START_TIME:
-                logging.info("⏳ Waiting for market hours...")
-                time.sleep(60)
-                continue
-                
-            if current_time >= ENTRY_END_TIME:
-                logging.info("⏹️ Trading hours ended")
-                break
-                
-            # Your trading logic here
+
+            # Example: Get latest prices
+            for symbol in SYMBOLS:
+                data = feed.get_latest_data(symbol)
+                if data:
+                    logging.info(f"{symbol} LTP: {data.get('ltp')}")
+
             time.sleep(10)
-            
+
     except KeyboardInterrupt:
-        logging.info("\n\U0001F6A7 Manual interruption detected")
+        logging.info("\n\U0001F6A7 Stopping bot...")
     finally:
         feed.close_connection()
-        logging.info("\U0001F3C1 Trading session ended")
+        logging.info("\U0001F3C1 Bot stopped")
+
+if __name__ == "__main__":
+    main()
