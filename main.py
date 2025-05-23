@@ -57,43 +57,50 @@ def initialize_market_feed():
     retry_delay = 5  # seconds
     
     for attempt in range(1, max_retries + 1):
-        try:
-            logging.info(f"Attempt {attempt} to connect to market feed...")
+        logging.info(f"Attempt {attempt} to connect to market feed...")
+        
+        if feed.connect_websocket():
+            # Verify connection by checking for initial data
+            time.sleep(2)  # Wait for initial data
             
-            if feed.connect_websocket():
-                # Verify connection by checking for initial data
-                time.sleep(2)  # Wait for initial data
-                
-                if feed.connected:
-                    # Subscribe to required symbols
-                    symbols = [SIGNAL_SYMBOL, SYMBOL_CE, SYMBOL_PE]
-                    if feed.subscribe_to_symbols(symbols):
-                        logging.info("Market feed initialized successfully")
-                        return True
-            
-            logging.warning(f"Connection attempt {attempt} failed. Retrying in {retry_delay} seconds...")
-            time.sleep(retry_delay)
-            
-        except Exception as e:
-            logging.error(f"Initialization error: {e}")
-            time.sleep(retry_delay)
+            if feed.connected:
+                # Subscribe to required symbols
+                symbols = [SIGNAL_SYMBOL, SYMBOL_CE, SYMBOL_PE]
+                if feed.subscribe_to_symbols(symbols):
+                    logging.info("Market feed initialized successfully")
+                    return True
+        
+        logging.warning(f"Connection attempt {attempt} failed. Retrying in {retry_delay} seconds...")
+        time.sleep(retry_delay)
     
     logging.error(f"Failed to establish market feed connection after {max_retries} attempts")
     return False
 
-# ... [rest of your existing functions remain the same] ...
+# ... [rest of your existing trading functions] ...
 
 if __name__ == "__main__":
     if not initialize_market_feed():
         exit(1)
 
     try:
-        # Your main trading loop here
+        # Main trading loop
         while True:
             now = datetime.now()
             current_time = now.strftime("%H:%M")
             logging.info(f"Current time: {current_time}")
-            time.sleep(10)  # Example delay
+            
+            # Check if we should be trading
+            if current_time < ENTRY_START_TIME:
+                logging.info("⏳ Waiting for market hours...")
+                time.sleep(60)
+                continue
+                
+            if current_time >= ENTRY_END_TIME:
+                logging.info("⏹️ Trading hours ended")
+                break
+                
+            # Your trading logic here
+            time.sleep(10)
             
     except KeyboardInterrupt:
         logging.info("\n\U0001F6A7 Manual interruption detected")
