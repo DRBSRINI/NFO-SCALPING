@@ -7,10 +7,14 @@ import time
 import os
 
 class DhanOptionsMarketFeed:
-    def __init__(self, instruments):
-        self.instruments = instruments
-        self.token = os.getenv("ACCESS_TOKEN") or "your_access_token"
-        self.client_id = os.getenv("CLIENT_ID") or "your_client_id"
+    def __init__(self, client_id, access_token):
+        self.client_id = client_id
+        self.token = access_token
+        self.instruments = ["NSE|12599298", "NSE|12604674"]  # Add yours
+
+    def run(self):
+        # ... start websocket using self.client_id and self.token
+        pass
 
     def on_message(self, ws, message):
         print("📩", message)
