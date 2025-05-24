@@ -130,13 +130,20 @@ def manage_open_trade(entry_price, current_price, sl, tp, tsl, direction):
     return "hold"
 
 # --- START FEED ---
-feed = DhanOptionsMarketFeed(CLIENT_ID, ACCESS_TOKEN)
-feed.on_tick = on_tick
-feed.subscribe([
+feed = DhanOptionsMarketFeed(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
+
+# Set tick handler
+feed.set_callback("on_tick", on_tick)
+
+# Set instruments to subscribe
+feed.set_instruments([
     {"instrument_token": SYMBOL_CE, "segment": "NFO", "exchange": "NSE"},
     {"instrument_token": SYMBOL_PE, "segment": "NFO", "exchange": "NSE"}
 ])
-feed.start()
+
+# Start WebSocket feed
+feed.start_websocket()
+
 
 print("📡 WebSocket started. Monitoring for signals...")
 
