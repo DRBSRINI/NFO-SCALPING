@@ -1,8 +1,8 @@
 import os
 import time
-import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
+from dhan_market_feed import DhanOptionsMarketFeed
 
 print("\U0001F680 Bot Started Successfully!")
 
@@ -12,13 +12,6 @@ ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
 print("\U0001F194 Client ID:", CLIENT_ID)
 print("\U0001F511 Access Token:", ACCESS_TOKEN[:6] + "..." + ACCESS_TOKEN[-6:])
-
-# Headers for API
-HEADERS = {
-    "access-token": ACCESS_TOKEN,
-    "Content-Type": "application/json",
-    "Accept": "application/json"
-}
 
 # --- CONFIG ---
 ENTRY_START_TIME = "09:15"
@@ -32,7 +25,6 @@ ORDER_TYPE = "LIMIT"
 BUFFER = 0.05
 DAILY_TRADE_LIMIT = 5
 
-SIGNAL_SYMBOL = "1330"  # NIFTY 50 Index (verify from Dhan)
 SYMBOL_CE = "12599298"
 SYMBOL_PE = "12604674"
 
@@ -40,36 +32,49 @@ ce_trades = 0
 pe_trades = 0
 open_trades = []
 
-# --- UTILS ---
-def fetch_candles(symbol, interval, limit=100):
-    url = f"https://api.dhan.co/market/candles?security_id={symbol}&interval={interval}&limit={limit}"
-    try:
-        response = requests.get(url, headers=HEADERS)
-        if response.status_code == 200:
-            return response.json().get('candles', [])
-        else:
-            print(f"❌ Candle fetch error ({interval}):", response.text)
-    except Exception as e:
-        print("❌ Candle API Exception:", e)
-    return []
+# Store tick data
+tick_data = {SYMBOL_CE: [], SYMBOL_PE: []}
+
+def on_tick(tick):
+    symbol = tick['instrument_token']
+    price = tick['last_traded_price']
+    timestamp = datetime.now()
+    tick_data[symbol].append((timestamp, price))
+
+def generate_candle(symbol):
+    now = datetime.now()
+    start = now - timedelta(minutes=3)
+    recent_ticks = [p for p in tick_data[symbol] if p[0] >= start]
+    if not recent_ticks:
+        return None
+    prices = [p[1] for p in recent_ticks]
+    candle = {
+        'open': prices[0],
+        'high': max(prices),
+        'low': min(prices),
+        'close': prices[-1],
+        'timestamp': now.strftime("%Y-%m-%d %H:%M:%S")
+    }
+    return candle
 
 def compute_ema(prices, period):
     return pd.Series(prices).ewm(span=period).mean().tolist()
 
-def get_macd_and_ema_signal(symbol):
-    candles = fetch_candles(symbol, "3minute", 100)
-    if len(candles) < 30:
-        print("⚠️ Not enough candles")
+def check_strategy(symbol):
+    candle = generate_candle(symbol)
+    if not candle:
+        print("⚠️ Not enough ticks for candle generation")
         return False
 
-    close_prices = [x['close'] for x in candles[:-1]]  # skip the forming candle
+    close_prices = [p[1] for p in tick_data[symbol][-100:]]
+    if len(close_prices) < 30:
+        return False
 
     ema5 = compute_ema(close_prices, 5)
     ema8 = compute_ema(close_prices, 8)
     ema13 = compute_ema(close_prices, 13)
 
-    ema_up = ema5[-1] > ema8[-1] > ema13[-1] and ema5[-1] > ema5[-2] and ema8[-1] > ema8[-2]
-    if not ema_up:
+    if not (ema5[-1] > ema8[-1] > ema13[-1] and ema5[-1] > ema5[-2] and ema8[-1] > ema8[-2]):
         print("⚠️ EMA condition not met")
         return False
 
@@ -85,16 +90,6 @@ def get_macd_and_ema_signal(symbol):
 
     return True
 
-def get_latest_price(symbol):
-    url = f"https://api.dhan.co/market/quote/{symbol}"
-    try:
-        response = requests.get(url, headers=HEADERS)
-        if response.status_code == 200:
-            return response.json().get('close')
-    except Exception as e:
-        print("❌ Price fetch failed:", e)
-    return None
-
 def place_order(symbol, qty, price):
     payload = {
         "security_id": symbol,
@@ -106,8 +101,13 @@ def place_order(symbol, qty, price):
         "product_type": "INTRADAY",
         "validity": "DAY"
     }
+    headers = {
+        "access-token": ACCESS_TOKEN,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
     try:
-        response = requests.post("https://api.dhan.co/orders", headers=HEADERS, json=payload)
+        response = requests.post("https://api.dhan.co/orders", headers=headers, json=payload)
         if response.status_code == 200:
             print(f"✅ Order placed: {symbol} @ {price}")
             return response.json()
@@ -129,59 +129,58 @@ def manage_open_trade(entry_price, current_price, sl, tp, tsl, direction):
         print("🔁 Trail SL active")
     return "hold"
 
-# --- STRATEGY LOOP ---
-while True:
-    now = datetime.now()
-    current_time = now.strftime("%H:%M")
+# --- START FEED ---
+feed = DhanOptionsMarketFeed(CLIENT_ID, ACCESS_TOKEN)
+feed.on_tick = on_tick
+feed.subscribe([
+    {"instrument_token": SYMBOL_CE, "segment": "NFO", "exchange": "NSE"},
+    {"instrument_token": SYMBOL_PE, "segment": "NFO", "exchange": "NSE"}
+])
+feed.start()
 
-    if current_time < ENTRY_START_TIME:
-        print("⏳ Waiting to start...")
-        time.sleep(30)
-        continue
+print("📡 WebSocket started. Monitoring for signals...")
 
-    if current_time >= ENTRY_END_TIME:
-        print("⏹️ Entry window closed.")
-        break
+try:
+    while True:
+        now = datetime.now()
+        current_time = now.strftime("%H:%M")
 
-    if ce_trades >= DAILY_TRADE_LIMIT and pe_trades >= DAILY_TRADE_LIMIT:
-        print("✅ Max trades done for the day.")
-        break
+        if current_time >= ENTRY_END_TIME:
+            print("⏹️ Entry window closed.")
+            break
 
-    option_type = "CE" if ce_trades < DAILY_TRADE_LIMIT else "PE"
-    symbol = SYMBOL_CE if option_type == "CE" else SYMBOL_PE
+        if ce_trades < DAILY_TRADE_LIMIT and check_strategy(SYMBOL_CE):
+            last_price = tick_data[SYMBOL_CE][-1][1] if tick_data[SYMBOL_CE] else None
+            if last_price:
+                limit_price = round(last_price + BUFFER, 2)
+                order = place_order(SYMBOL_CE, QUANTITY, limit_price)
+                if order:
+                    ce_trades += 1
+                    open_trades.append({"symbol": SYMBOL_CE, "entry_price": limit_price, "sl": STOP_LOSS_POINTS,
+                                         "tp": TARGET_POINTS, "tsl": TRAILING_SL_STEP, "direction": "CE"})
 
-    if get_macd_and_ema_signal(symbol):  # FIXED: apply signal on actual option candle, not index
-        price = get_latest_price(symbol)
-        if not price:
-            continue
+        if pe_trades < DAILY_TRADE_LIMIT and check_strategy(SYMBOL_PE):
+            last_price = tick_data[SYMBOL_PE][-1][1] if tick_data[SYMBOL_PE] else None
+            if last_price:
+                limit_price = round(last_price - BUFFER, 2)
+                order = place_order(SYMBOL_PE, QUANTITY, limit_price)
+                if order:
+                    pe_trades += 1
+                    open_trades.append({"symbol": SYMBOL_PE, "entry_price": limit_price, "sl": STOP_LOSS_POINTS,
+                                         "tp": TARGET_POINTS, "tsl": TRAILING_SL_STEP, "direction": "PE"})
 
-        limit_price = round(price + BUFFER if option_type == "CE" else price - BUFFER, 2)
-        order = place_order(symbol, QUANTITY, limit_price)
-        if order:
-            trade = {
-                "symbol": symbol,
-                "entry_price": limit_price,
-                "sl": STOP_LOSS_POINTS,
-                "tp": TARGET_POINTS,
-                "tsl": TRAILING_SL_STEP,
-                "direction": option_type
-            }
-            open_trades.append(trade)
-            if option_type == "CE":
-                ce_trades += 1
-            else:
-                pe_trades += 1
-        time.sleep(60)
-    else:
-        print("❌ No entry match")
-        time.sleep(30)
+        for trade in open_trades[:]:
+            last_price = tick_data[trade['symbol']][-1][1] if tick_data[trade['symbol']] else None
+            if not last_price:
+                continue
+            action = manage_open_trade(trade['entry_price'], last_price, trade['sl'], trade['tp'], trade['tsl'], trade['direction'])
+            if action == "exit":
+                open_trades.remove(trade)
 
-    for trade in open_trades[:]:
-        curr_price = get_latest_price(trade['symbol'])
-        if curr_price is None:
-            continue
-        action = manage_open_trade(trade['entry_price'], curr_price, trade['sl'], trade['tp'], trade['tsl'], trade['direction'])
-        if action == "exit":
-            open_trades.remove(trade)
+        time.sleep(5)
 
-print("🏁 Day cycle finished.")
+except KeyboardInterrupt:
+    print("🛑 Interrupted by user")
+finally:
+    feed.stop()
+    print("🏁 Day cycle finished.")
