@@ -136,8 +136,10 @@ feed = DhanOptionsMarketFeed(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
 feed.on_tick = on_tick
 
 # Set instruments to subscribe
-feed.set_instruments([...])
-
+feed.subscribe([
+    {"instrument_token": SYMBOL_CE, "segment": "NFO", "exchange": "NSE"},
+    {"instrument_token": SYMBOL_PE, "segment": "NFO", "exchange": "NSE"}
+])
 
 # Start WebSocket feed
 feed.start_websocket()
