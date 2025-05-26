@@ -72,7 +72,7 @@ def on_open(ws):
 
 def start_websocket():
     ws = websocket.WebSocketApp(
-        "wss://api.dhan.co/market/feed",
+        "wss://streamapi.dhan.co/ws",   # ✅ Correct URL
         on_open=on_open,
         on_message=on_message,
         on_error=on_error,
@@ -81,6 +81,7 @@ def start_websocket():
     thread = threading.Thread(target=ws.run_forever)
     thread.daemon = True
     thread.start()
+
 
 
 def generate_candle(symbol):
