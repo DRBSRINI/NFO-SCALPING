@@ -135,7 +135,8 @@ def manage_open_trade(entry_price, current_price, sl, tp, tsl, direction):
 
 # ---- START WEBSOCKET ----
 feed = DhanOptionsMarketFeed(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
-feed.set_callback("on_tick", on_tick)
+feed.on_tick = on_tick
+
 
 feed.subscribe_instruments([
     {"instrument_token": SYMBOL_CE, "segment": "NFO", "exchange": "NSE"},
