@@ -40,24 +40,25 @@ tick_data = {SYMBOL_CE: [], SYMBOL_PE: []}
 
 # WebSocket handling
 def on_message(ws, message):
-    data = json.loads(message)
-    if 'last_traded_price' in data:
-        symbol = str(data['security_id'])
-        price = float(data['last_traded_price'])
-        timestamp = datetime.now()
-        tick_data[symbol].append((timestamp, price))
-
+    print("📩 Raw Tick:", message)
+    try:
+        data = json.loads(message)
+        if isinstance(data, dict) and 'last_traded_price' in data:
+            symbol = str(data['security_id'])
+            price = float(data['last_traded_price'])
+            timestamp = datetime.now()
+            tick_data[symbol].append((timestamp, price))
+    except Exception as e:
+        print("❌ Message Handling Error:", e)
 
 def on_error(ws, error):
     print(f"❌ WebSocket error: {error}")
 
-
 def on_close(ws, close_status_code, close_msg):
     print(f"🔌 WebSocket closed: {close_status_code} - {close_msg}")
 
-
 def on_open(ws):
-    print("📡 WebSocket connection opened.")
+    print("✅ WebSocket connection opened, subscribing to instruments...")
     payload = {
         "action": "subscribe",
         "key": ACCESS_TOKEN,
@@ -69,10 +70,9 @@ def on_open(ws):
     }
     ws.send(json.dumps(payload))
 
-
 def start_websocket():
     ws = websocket.WebSocketApp(
-        "wss://streamapi.dhan.co/ws",   # ✅ Correct URL
+        "wss://streamapi.dhan.co/ws",
         on_open=on_open,
         on_message=on_message,
         on_error=on_error,
@@ -81,8 +81,6 @@ def start_websocket():
     thread = threading.Thread(target=ws.run_forever)
     thread.daemon = True
     thread.start()
-
-
 
 def generate_candle(symbol):
     now = datetime.now()
@@ -100,10 +98,8 @@ def generate_candle(symbol):
     }
     return candle
 
-
 def compute_ema(prices, period):
     return pd.Series(prices).ewm(span=period).mean().tolist()
-
 
 def check_strategy(symbol):
     candle = generate_candle(symbol)
@@ -135,7 +131,6 @@ def check_strategy(symbol):
 
     return True
 
-
 def place_order(symbol, qty, price):
     payload = {
         "security_id": symbol,
@@ -162,7 +157,6 @@ def place_order(symbol, qty, price):
     except Exception as e:
         print("❌ Order exception:", e)
     return None
-
 
 def manage_open_trade(entry_price, current_price, sl, tp, tsl, direction):
     move = current_price - entry_price if direction == "CE" else entry_price - current_price
